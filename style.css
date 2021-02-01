@@ -37,3 +37,9 @@
   position: fixed;
   font-size: x-large;
 }
+
+.right-edge {
+  margin-left: auto;
+  margin-right: 0;
+  display: table;
+}

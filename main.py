@@ -809,3 +809,6 @@ canvas = fabric.Canvas.new('c', {
     'backgroundColor': 'darkgreen'
 })
 app = App(document, canvas)
+
+document <= html.H2(
+    html.A("Instructions", href="instructions.html", Class="right-edge"))
