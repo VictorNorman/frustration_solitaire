@@ -1,0 +1,39 @@
+@font-face {
+  font-family: 'AstroSpace';
+  src: url('AstroSpace-eZ2Bg.ttf') format('truetype');
+}
+
+* {
+  font-family: 'AstroSpace', sans-serif;
+}
+
+.game-info {
+  display: flex;
+  justify-content: space-evenly;
+}
+
+.info-text {
+  margin: 1vw;
+  font-size: large;
+}
+
+.button {
+  font-size: medium;
+  margin: 1vw;
+  background-color: beige;
+}
+
+/* make stuff centered horizontally */
+.center {
+  text-align: center;
+}
+
+.message-box {
+  background-color:rgb(255, 255, 255, .95);
+  border: 8px solid steelblue;
+  padding: 16px;
+  /* next line is so that we can float this message box over the canvas.
+     Its position is set in the code.  */
+  position: fixed;
+  font-size: x-large;
+}
