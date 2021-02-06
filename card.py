@@ -2,6 +2,8 @@
 Date: Nov. 25, 2016
 '''
 
+import random
+
 
 class Card:
     '''Card class: contains num and suit and allows one to compare
@@ -78,7 +80,6 @@ class Deck:
         self._deck.extend(cards)
 
     def shuffle(self):
-        import random
         random.shuffle(self._deck)
 
     def addAllCards(self):
@@ -99,3 +100,6 @@ class Deck:
     def getCards(self):
         '''Return the list of card objects.'''
         return self._deck
+
+    def makeCopy(self):
+        return Deck(self._deck)

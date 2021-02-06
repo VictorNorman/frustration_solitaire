@@ -95,7 +95,8 @@ class CardImg:
 
         self._outline = fabric.Rect.new({
             'strokeWidth': OUTLINE_WIDTH,
-            'width': CARD_WIDTH + 2 * OUTLINE_WIDTH + 2,
+            'strokeDashArray': [10, 3],
+            'width': CARD_WIDTH + 2 * OUTLINE_WIDTH,
             'height': CARD_HEIGHT + 2 * OUTLINE_WIDTH + 2,
             'selectable': False,
         })
@@ -273,6 +274,8 @@ class App:
         self._board = Board()
         self._deck = Deck()
         self._deck.addAllCards()
+        self._copyOfDeck = self._deck.makeCopy()
+
         # We'll fill this in when we remove the aces from the board.
         self._removedAces = []
 
@@ -340,6 +343,11 @@ class App:
         self._new_game_btn.bind('click', self.newGameClickHandler)
         self._game_info_elem <= self._new_game_btn
 
+        self._repeat_game_btn = html.BUTTON(
+            "Repeat Game", Class="button")
+        self._repeat_game_btn.bind('click', self.repeatGameClickHandler)
+        self._game_info_elem <= self._repeat_game_btn
+
         self._messageDiv = self.createMessageDiv()
 
         self._status_elem = html.SPAN("{status}")
@@ -374,6 +382,7 @@ class App:
     def initNewGame(self):
 
         self._board.layoutCards(self._deck)
+
         self._boardGui.displayLayout()
         self._cardsInPlace = self._board.countCardsInPlace()
         self._cardsPlacedPerRound = [self._cardsInPlace]
@@ -516,12 +525,14 @@ class App:
             if card is not None:
                 self.flashLowerCard(card, row, col)
 
-    def newGameClickHandler(self, ev):
+    def repeatGameClickHandler(self, ev):
+        self.newGameClickHandler(ev, self._copyOfDeck)
+
+    def newGameClickHandler(self, ev, deck=None):
         '''Call back when New Game button is pressed.
         '''
 
         self.disableNewGameButton()
-
         self._boardGui.clear()
 
         self._roundNum = 1
@@ -529,12 +540,17 @@ class App:
         self._cardsPlacedPerRound = [0]
 
         # Add all the cards on the board to the deck.
-        self._deck.addCards(self._board.getAllCards())
-        if self._deck.numCards() == 48:
-            # The board had aces removed, so add the aces back to the deck.
-            for card in self._removedAces:
-                self._deck.addCard(card)
-        self._deck.shuffle()
+        if deck:
+            self._deck = deck
+            self._copyOfDeck = self._deck.makeCopy()
+        else:
+            self._deck.addCards(self._board.getAllCards())
+            if self._deck.numCards() == 48:
+                # The board had aces removed, so add the aces back to the deck.
+                for card in self._removedAces:
+                    self._deck.addCard(card)
+            self._deck.shuffle()
+
         self._board.reinit()
 
         self.initNewGame()
@@ -693,7 +709,6 @@ class App:
         self._messageDiv.style.display = "block"
         lines = msg.split('\n')
         htmls = [html.DIV(line, Class="center") for line in lines]
-        print('htmls len', len(htmls))
         for h in htmls:
             self._messageDiv <= h
         self._doc <= self._messageDiv
@@ -812,3 +827,4 @@ app = App(document, canvas)
 
 document <= html.H2(
     html.A("Instructions", href="instructions.html", Class="right-edge"))
+document <= html.H5('Version: 1.1', Class="right-edge")
