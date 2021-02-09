@@ -182,7 +182,7 @@ class Board:
 
     def findCardLocation(self, card: Card):
         '''Given a card, find where it is on the board and return
-        a tuple (row, col). If not found (which should never happen),
+        a tuple(row, col). If not found(which should never happen),
         return (None, None)'''
 
         for row in range(self.NUM_ROWS):
@@ -194,7 +194,7 @@ class Board:
 
     def findPlayableCards(self):
         '''Find the cards that can be played into the open spots.
-        Return them as a list of tuples (card, row, col),
+        Return them as a list of tuples(card, row, col),
         where the row, col is where the card is.
         '''
 
@@ -293,7 +293,7 @@ class Board:
         return bad
 
     def getCardsInPlace(self):
-        '''Return a list of (card, row, col) tuples for the cards that have been
+        '''Return a list of(card, row, col) tuples for the cards that have been
         placed correctly as part of the solution.
         '''
         goodCards = []
@@ -324,38 +324,12 @@ class Board:
         '''Count and return the number of cards that have been
         placed correctly as part of the solution.
         '''
-
-        badCardCt = 0
-        for row in range(self.NUM_ROWS):
-            col = 0
-            card = self._board[row][col]
-            if card is None:
-                # Whole row is bad: first card is empty slot.
-                badCardCt += 12
-                continue
-            thisRowSuit = card.getSuit()
-
-            while col < 13:
-                card = self._board[row][col]
-                if card is None:
-                    badCardCt += self.NUM_COLS - 1 - col
-                    break
-                if card.getSuit() != thisRowSuit:
-                    badCardCt += self.NUM_COLS - 1 - col
-                    break
-                elif card.getNum() != col + 2:
-                    badCardCt += self.NUM_COLS - 1 - col
-                    break
-                # else the card is the correct suit and
-                # correct number: it must be in place!
-                else:
-                    col += 1
-        return 48 - badCardCt
+        return len(self.getCardsInPlace())
 
     def findLowerCard(self, card):
         '''Find the card that is one "lower" than the given card.
         E.g., if card is 7D, find 6D.  Return the card, its row, and
-        column in a 3-ple.  return (None * 3) if no lower card is found.'''
+        column in a 3-ple. return (None * 3) if no lower card is found.'''
         for row in range(self.NUM_ROWS):
             for col in range(self.NUM_COLS):
                 lcard = self._board[row][col]

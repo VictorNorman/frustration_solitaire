@@ -4,6 +4,8 @@ Date: Nov. 25, 2016
 
 import random
 
+DEBUG = True
+
 
 class Card:
     '''Card class: contains num and suit and allows one to compare
@@ -33,6 +35,9 @@ class Card:
                 self._num = 14
         self._suit = suit
 
+        # For use in games, when a card is worth a certain number of points.
+        self._points = 0
+
     def __eq__(self, other):
         return self._num == other._num and self._suit == other._suit
 
@@ -41,6 +46,14 @@ class Card:
 
     def getSuit(self):
         return self._suit
+
+    def getPoints(self):
+        return self._points
+
+    def setPoints(self, pts):
+        if DEBUG:
+            print('for card', str(self), 'points set to ', pts)
+        self._points = pts
 
     def __str__(self):
         if self._num <= 10:

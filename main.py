@@ -248,6 +248,7 @@ class BoardGui:
 
 
 # ----------------------------- main -------------------------------
+
 class App:
     '''The main card game application.  This GUI creates a Deck and Board
     model objects and uses them to keep track of legal moves, where the
@@ -297,7 +298,7 @@ class App:
 
         # count of cards correctly placed, per round. 1st round is in
         # index 0, and initialized to 0 cards placed.
-        self._cardsPlacedPerRound = [0]
+        self._numCardsPlacedThisRound = 0
 
         self._roundNum = 1
 
@@ -319,12 +320,12 @@ class App:
         self._round_num_val = template.Template(self._round_info_elem)
         self.updateRoundNum()
 
-        self._cardsInPlace = self._board.countCardsInPlace()
+        self._numCardsInPlace = self._board.countCardsInPlace()
         self._cards_in_place_elem = html.SPAN(
             "Cards in place: {cardsInPlace}", Class="info-text")
         self._game_info_elem <= self._cards_in_place_elem
         self._cardsInPlace_val = template.Template(self._cards_in_place_elem)
-        self.updateCardsInPlace()
+        self.updateCardsInPlaceText()
 
         self._score_info_elem = html.SPAN(
             "Score: {score}", Class="info-text")
@@ -336,7 +337,7 @@ class App:
         self._game_info_elem <= self._pts_per_card_info_elem
         self._ptsPerCardInfo_val = template.Template(
             self._pts_per_card_info_elem)
-        self.updateScore()
+        self.updateScoreText()
 
         self._new_game_btn = html.BUTTON(
             "New Game", Class="button", disabled=True)
@@ -381,14 +382,16 @@ class App:
 
     def initNewGame(self):
 
+        assert len(self._deck.getCards()) == 52
+        self.resetCardScores()
+
         self._board.layoutCards(self._deck)
 
         self._boardGui.displayLayout()
-        self._cardsInPlace = self._board.countCardsInPlace()
-        self._cardsPlacedPerRound = [self._cardsInPlace]
+        self._numCardsInPlace = self._board.countCardsInPlace()
 
-        self.updateCardsInPlace()
-        self.updateScore()
+        self.updateCardsInPlaceText()
+        self.updateScoreText()
 
         # Disable the "next round" button.
         self.disableNextRoundBtn()
@@ -404,7 +407,6 @@ class App:
             self._card2ImgDict[id(card)].erase()
 
         self.enableNewGameButton()
-
         if self.isEndOfRoundOrGame():
             return
 
@@ -424,7 +426,7 @@ class App:
                 "Click 'New Game' to try again.", 5000)
             self.addScoreToHighScoresTable(score)
             self.setStatus("Cards placed this round: " +
-                           str(self._cardsPlacedPerRound[self._roundNum - 1]))
+                           str(self._numCardsPlacedThisRound))
             self.playFanfareSound()
             return True
 
@@ -474,31 +476,38 @@ class App:
                 print('got card dest')
 
             self.eraseMovableCardHighlights()
-            cardsInPlaceBeforeMove = self._cardsInPlace
+            numCardsInPlaceBeforeMove = self._numCardsInPlace
+
+            # if card was in place, but is moved (can only be a 2),
+            # then set card's points to 0, and set to 0 the points
+            # of all the cards that follow it, that may have been
+            # in place.
+            self.handleMovingCardInPlace(card, fromRow, fromCol)
+
             self._board.moveCard(card, fromRow, fromCol, toRow, toCol)
             self._boardGui.moveCard(card, toRow, toCol)
-            self._cardsInPlace = self._board.countCardsInPlace()
+
+            self._numCardsInPlace = self._board.countCardsInPlace()
             if DEBUG:
                 print('moved card')
-            newCardsInPlace = self._cardsInPlace - cardsInPlaceBeforeMove
-            if newCardsInPlace > 0:
+
+            self._numCardsPlacedThisRound = self._numCardsInPlace - numCardsInPlaceBeforeMove
+
+            if self._numCardsPlacedThisRound != 0:
                 self.playCardInPlaceSound()
                 if DEBUG:
                     print('played card in place sound')
-                self._cardsPlacedPerRound[self._roundNum-1] += newCardsInPlace
-                if DEBUG:
-                    print('calced cardsPlacedPerRound')
-                self.updateCardsInPlace()
+                self.updateCardsInPlaceText()
                 if DEBUG:
                     print('updates Cards in palce')
-                self.updateScore()
-                if DEBUG:
-                    print('scores udpated')
                 self.markGoodCards()
                 if DEBUG:
                     print('marked good cards')
+                self.updateScoreText()
+                if DEBUG:
+                    print('scores udpated')
                 self.setStatus("Cards placed this round: " +
-                               str(self._cardsPlacedPerRound[self._roundNum - 1]))
+                               str(self._numCardsPlacedThisRound))
             else:
                 # just a normal move
                 self.playCardMoveSound()
@@ -523,7 +532,7 @@ class App:
             # E.g., you click 7D, highlight 6D
             (card, row, col) = self._board.findLowerCard(card)
             if card is not None:
-                self.flashLowerCard(card, row, col)
+                self.bounceLowerCard(card, row, col)
 
     def repeatGameClickHandler(self, ev):
         self.newGameClickHandler(ev, self._copyOfDeck)
@@ -537,7 +546,6 @@ class App:
 
         self._roundNum = 1
         self.updateRoundNum()
-        self._cardsPlacedPerRound = [0]
 
         # Add all the cards on the board to the deck.
         if deck:
@@ -550,6 +558,7 @@ class App:
                 for card in self._removedAces:
                     self._deck.addCard(card)
             self._deck.shuffle()
+            self._copyOfDeck = self._deck.makeCopy()
 
         self._board.reinit()
 
@@ -567,24 +576,27 @@ class App:
         self.disableNewGameButton()
 
         # No cards placed yet in this round
-        self._cardsPlacedPerRound.append(0)
+        self._numCardsPlacedThisRound = 0
         self._roundNum += 1
         self.updateRoundNum()
-        discarded = self._board.removeIncorrectCards()
-        self._deck.addCards(discarded)
+        unplacedCards = self._board.removeIncorrectCards()
+        self._deck.addCards(unplacedCards)
         # Add the aces back to the deck.
         for card in self._removedAces:
             self._deck.addCard(card)
         self._deck.shuffle()
 
+        print('nextRound: deck is ', self._deck)
+        print('unplaced = ', unplacedCards)
+
         # display the board with only "good cards" for 1 second.
-        for card in discarded:
+        for card in unplacedCards:
             cardimg = self._card2ImgDict[id(card)]
             cardimg.erase()
-        self.updateScore()
+        self.updateScoreText()
 
         self.setStatus("Cards placed this round: " +
-                       str(self._cardsPlacedPerRound[self._roundNum - 1]))
+                       str(self._numCardsPlacedThisRound))
 
         timer.set_timeout(self.nextRoundContinued, 1000)
 
@@ -630,23 +642,36 @@ class App:
             self.drawOutline(card, MOVABLE_CARD_COLOR)
 
     def markGoodCards(self):
-        '''Redraw all the outlines around good cards.'''
+        '''Redraw all the outlines around good cards.  Also, update
+        score for each card.'''
         goodCards = self._board.getCardsInPlace()
         if DEBUG:
             print('got cards in place')
         for card, r, c in goodCards:
             self.drawOutline(card, CARDS_IN_PLACE_COLOR)
+            if card.getPoints() == 0:
+                card.setPoints(self.getPtsPerCard())
 
-    def flashLowerCard(self, card, row, col):
+    def handleMovingCardInPlace(self, card, fromRow, fromCol):
+        '''If the card being moved was in place, then we have to
+        change its points value to 0, and do the same for all
+        cards in place to its right.  This is only possible if
+        you are moving a 2 in the first column.'''
+        if fromCol != 0:
+            return
+        if card.getNum() == 2:
+            card.setPoints(0)
+            for col in range(1, Board.NUM_COLS):
+                c = self._board.getCardAt(fromRow, col)
+                if c is not None:
+                    c.setPoints(0)
+                    self.eraseOutline(c)
+
+    def bounceLowerCard(self, card, row, col):
+        '''Make the card that is one lower from the given card bounce
+        in the GUI.'''
         cardimg = self._card2ImgDict[id(card)]
         cardimg.bounce()
-
-    # def unflashLowerCard(self):
-    #     self.eraseOutline(self._flashingCard)
-    #     # the card that was flashed may have been one of these others
-    #     # so we have to redraw everything.
-    #     self.highlightMovableCards()
-    #     self.markGoodCards()
 
     def drawOutline(self, card, color):
         cardimg = self._card2ImgDict[id(card)]
@@ -669,17 +694,19 @@ class App:
     def currentScore(self):
         '''Compute the total score each time by summing the number of
         cards placed correctly in a round * the value of a card per round.'''
+
+        # Compute the new way.
         res = 0
-        for rnd in range(len(self._cardsPlacedPerRound)):
-            res += (10 - rnd) * self._cardsPlacedPerRound[rnd]
+        for c, _, _ in self._board.getCardsInPlace():
+            res += c.getPoints()
         return res
 
-    def updateScore(self):
+    def updateScoreText(self):
         self._scoreInfo_val.render(score=self.currentScore())
         self._ptsPerCardInfo_val.render(ptsPerCard=self.getPtsPerCard())
 
-    def updateCardsInPlace(self):
-        self._cardsInPlace_val.render(cardsInPlace=self._cardsInPlace)
+    def updateCardsInPlaceText(self):
+        self._cardsInPlace_val.render(cardsInPlace=self._numCardsInPlace)
 
     def updateRoundNum(self):
         self._round_num_val.render(roundNum=self._roundNum)
@@ -803,18 +830,14 @@ class App:
     def storePlaySoundsSetting(self):
         self._storage['playSounds'] = str(self._playSounds)
 
+    def resetCardScores(self):
+        for c in self._deck.getCards():
+            c.setPoints(0)
+
 
 # Use brython to create the canvas.
 real_canvas = html.CANVAS(width=CANVAS_WIDTH, height=CANVAS_HEIGHT, id='c')
 document <= real_canvas
-
-
-def windowChange(ev):
-    print(window.innerWidth, window.innerHeight)
-
-
-window.bind('resize', windowChange)
-
 
 # Use the canvas in fabric
 canvas = fabric.Canvas.new('c', {
@@ -827,4 +850,4 @@ app = App(document, canvas)
 
 document <= html.H2(
     html.A("Instructions", href="instructions.html", Class="right-edge"))
-document <= html.H5('Version: 1.1', Class="right-edge")
+document <= html.H5('Version: 1.1.1', Class="right-edge")
