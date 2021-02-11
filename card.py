@@ -4,7 +4,7 @@ Date: Nov. 25, 2016
 
 import random
 
-DEBUG = True
+DEBUG = False
 
 
 class Card:

@@ -4,7 +4,7 @@ Date: Nov. 25, 2016
 
 from card import *
 
-DEBUG = True
+DEBUG = False
 
 
 class Board:

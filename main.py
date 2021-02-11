@@ -7,9 +7,9 @@ from board import Board
 fabric = window.fabric
 
 stringify = window.JSON.stringify
+debug = print
 
-
-DEBUG = False
+DEBUG = True
 
 # Default sizes for
 CARD_PADDING = 10
@@ -28,8 +28,7 @@ CANVAS_COLOR = "darkgreen"
 
 # print("CANVAS_W ", CANVAS_WIDTH)
 # print("CANVAS_h ", CANVAS_HEIGHT)
-if DEBUG:
-    print('window w, h = ', window.innerWidth, window.innerHeight)
+DEBUG and debug('window w, h = ', window.innerWidth, window.innerHeight)
 
 aspect_ratio = CANVAS_WIDTH / CANVAS_HEIGHT
 # print("for this width, height is", window.innerWidth / aspect_ratio)
@@ -49,9 +48,8 @@ CARD_AREA_HEIGHT = CANVAS_HEIGHT / 4 - 5
 CARD_WIDTH = CARD_AREA_WIDTH / 1.2
 CARD_HEIGHT = CARD_AREA_HEIGHT / 1.2
 
-if DEBUG:
-    print('CARD_AREA_W, H = ', CARD_AREA_WIDTH, CARD_AREA_HEIGHT)
-    print('CANVAS_WIDTH, HEIGHT = ', CANVAS_WIDTH, CANVAS_HEIGHT)
+DEBUG and debug('CARD_AREA_W, H = ', CARD_AREA_WIDTH, CARD_AREA_HEIGHT)
+DEBUG and debug('CANVAS_WIDTH, HEIGHT = ', CANVAS_WIDTH, CANVAS_HEIGHT)
 
 if CARD_WIDTH >= 75:
     OUTLINE_WIDTH = 3
@@ -135,8 +133,7 @@ class CardImg:
             'fill': 'transparent',
             'stroke': color,
         })
-        if DEBUG:
-            print('called cardimg.set')
+        DEBUG and debug('called cardimg.set')
         if not self._outline_displayed:
             self._canv.add(self._outline)
             self._outline_displayed = True
@@ -454,8 +451,6 @@ class App:
         Move the card in the board and in the boardGui.
         Check if there are more moves, the game is done, etc.
         '''
-        if DEBUG:
-            print('Got click!')
 
         # print("number of objects = ", len(self._canv.getObjects()))
 
@@ -466,21 +461,17 @@ class App:
         if card is None:
             return
 
-        if DEBUG:
-            print('got card')
         if self.cardIsMoveable(card):
 
             fromRow, fromCol = self._board.findCardLocation(card)
-            if DEBUG:
-                print('got card location')
+            DEBUG and debug('got card location')
 
             res = self._board.getMoveableCardDest(card)
             if res is None:
                 print("Cannot move that card.")
                 return
             toRow, toCol = res   # split into the 2 parts.
-            if DEBUG:
-                print('got card dest')
+            DEBUG and debug('got card dest')
 
             self.eraseMovableCardHighlights()
             numCardsInPlaceBeforeMove = self._numCardsInPlace
@@ -496,27 +487,21 @@ class App:
             self._boardGui.moveCard(card, toRow, toCol)
 
             self._numCardsInPlace = self._board.countCardsInPlace()
-            if DEBUG:
-                print('moved card')
+            DEBUG and debug('moved card')
 
             # Note: this could be negative if a 2 was moved and there were cards
             # in place behind it!
             numCardsPlacedByThisMove = self._numCardsInPlace - numCardsInPlaceBeforeMove
-            print('num cards palced by this move = ', numCardsPlacedByThisMove)
 
             if numCardsPlacedByThisMove != 0:
                 self.playCardInPlaceSound()
-                if DEBUG:
-                    print('played card in place sound')
+                DEBUG and debug('played card in place sound')
                 self.updateCardsInPlaceText()
-                if DEBUG:
-                    print('updates Cards in palce')
+                DEBUG and debug('updates Cards in palce')
                 self.markGoodCards()
-                if DEBUG:
-                    print('marked good cards')
+                DEBUG and debug('marked good cards')
                 self.updateScoreText()
-                if DEBUG:
-                    print('scores udpated')
+                DEBUG and debug('scores udpated')
 
                 self._numCardsPlacedThisRound += numCardsPlacedByThisMove
 
@@ -526,19 +511,15 @@ class App:
                 # just a normal move
                 self.playCardMoveSound()
 
-            if DEBUG:
-                print('checking if end of round or game')
+            DEBUG and debug('checking if end of round or game')
             if self.isEndOfRoundOrGame():
                 return
 
-            if DEBUG:
-                print('updating movable cards')
+            DEBUG and debug('updating movable cards')
             self._moveableCards = self._board.findPlayableCards()
-            if DEBUG:
-                print('updated movable cards')
+            DEBUG and debug('updated movable cards')
             self.highlightMovableCards()
-            if DEBUG:
-                print('highlighted movable cards')
+            DEBUG and debug('highlighted movable cards')
 
         else:
             # user clicked another card: so highlight the card it would
@@ -653,8 +634,7 @@ class App:
         '''Redraw all the outlines around good cards.  Also, update
         score for each card.'''
         goodCards = self._board.getCardsInPlace()
-        if DEBUG:
-            print('got cards in place')
+        DEBUG and debug('got cards in place')
         for card, r, c in goodCards:
             self.drawOutline(card, CARDS_IN_PLACE_COLOR)
             if card.getPoints() == 0:
