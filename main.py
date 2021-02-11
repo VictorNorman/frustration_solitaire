@@ -296,8 +296,7 @@ class App:
         self._storage = local_storage.storage
         self.loadSettingsFromStorage()
 
-        # count of cards correctly placed, per round. 1st round is in
-        # index 0, and initialized to 0 cards placed.
+        # count of cards correctly placed in a round.
         self._numCardsPlacedThisRound = 0
 
         self._roundNum = 1
@@ -402,6 +401,7 @@ class App:
         Then hide the corresponding CardImgs in the BoardGui for the
         aces.
         '''
+
         self._removedAces = self._board.removeAces()
         for card in self._removedAces:
             self._card2ImgDict[id(card)].erase()
@@ -413,6 +413,13 @@ class App:
         self._moveableCards = self._board.findPlayableCards()
         self.highlightMovableCards()
         self.markGoodCards()
+
+        oldCardInPlace = self._numCardsInPlace
+        self._numCardsPlacedThisRound = self._board.countCardsInPlace() - oldCardInPlace
+
+        # Count number of cards added in place by sheer luck!
+        self.setStatus("Cards placed this round: " +
+                       str(self._numCardsPlacedThisRound))
 
     def isEndOfRoundOrGame(self):
         '''Check if the game is over or the round is over.  Return True
@@ -477,6 +484,7 @@ class App:
 
             self.eraseMovableCardHighlights()
             numCardsInPlaceBeforeMove = self._numCardsInPlace
+            print('numcardsinplace = ', numCardsInPlaceBeforeMove)
 
             # if card was in place, but is moved (can only be a 2),
             # then set card's points to 0, and set to 0 the points
@@ -491,9 +499,12 @@ class App:
             if DEBUG:
                 print('moved card')
 
-            self._numCardsPlacedThisRound = self._numCardsInPlace - numCardsInPlaceBeforeMove
+            # Note: this could be negative if a 2 was moved and there were cards
+            # in place behind it!
+            numCardsPlacedByThisMove = self._numCardsInPlace - numCardsInPlaceBeforeMove
+            print('num cards palced by this move = ', numCardsPlacedByThisMove)
 
-            if self._numCardsPlacedThisRound != 0:
+            if numCardsPlacedByThisMove != 0:
                 self.playCardInPlaceSound()
                 if DEBUG:
                     print('played card in place sound')
@@ -506,6 +517,9 @@ class App:
                 self.updateScoreText()
                 if DEBUG:
                     print('scores udpated')
+
+                self._numCardsPlacedThisRound += numCardsPlacedByThisMove
+
                 self.setStatus("Cards placed this round: " +
                                str(self._numCardsPlacedThisRound))
             else:
@@ -586,17 +600,11 @@ class App:
             self._deck.addCard(card)
         self._deck.shuffle()
 
-        print('nextRound: deck is ', self._deck)
-        print('unplaced = ', unplacedCards)
-
         # display the board with only "good cards" for 1 second.
         for card in unplacedCards:
             cardimg = self._card2ImgDict[id(card)]
             cardimg.erase()
         self.updateScoreText()
-
-        self.setStatus("Cards placed this round: " +
-                       str(self._numCardsPlacedThisRound))
 
         timer.set_timeout(self.nextRoundContinued, 1000)
 
