@@ -8,18 +8,19 @@
 }
 
 .game-info {
+  padding-top: 10px;
   display: flex;
   justify-content: space-evenly;
 }
 
 .info-text {
-  margin: 1vw;
+  margin: 0 1vw;
   font-size: large;
 }
 
 .button {
   font-size: medium;
-  margin: 1vw;
+  margin: 0 1vw;
   background-color: beige;
 }
 

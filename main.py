@@ -56,6 +56,11 @@ if CARD_WIDTH >= 75:
 else:
     OUTLINE_WIDTH = 1
 
+CARD_SOURCES = [
+    'Playing_Cards/SVG-cards-1.3/',
+    'Playing_Cards/SVG-simple-cards/',
+]
+
 
 class CardImg:
     '''This class encapsulates an image to represent a card, reading the
@@ -76,19 +81,15 @@ class CardImg:
         self._canv = canv   # fabric canvas
 
         # based on the card values, build up the name of the image file.
-        num = card.getNum()
-        num = self.TRANSLATE_NUM[num]
-        suit = card.getSuit()
-        suit = self.TRANSLATE_SUIT[suit]
+        num = self.TRANSLATE_NUM[card.getNum()]
+        suit = self.TRANSLATE_SUIT[card.getSuit()]
         self._image_name = num + "_of_" + suit + ".svg"
 
         self._loaded = False
         self._displayed = False
 
-        fabric.Image.fromURL(
-            "Playing_Cards/SVG-cards-1.3/" + self._image_name,
-            self._onload
-        )
+        # Use 0th card source by default
+        fabric.Image.fromURL(CARD_SOURCES[0] + self._image_name,  self._onload)
         self._draw_when_loaded = False
 
         self._outline = fabric.Rect.new({
@@ -181,6 +182,13 @@ class CardImg:
                               'onComplete': self.bounceBack,
                           })
 
+    def switchCardImage(self, new_idx):
+        '''switch to the given card source image'''
+        self._canv.remove(self._img)
+        self._loaded = False
+        fabric.Image.fromURL(CARD_SOURCES[new_idx] + self._image_name,
+                             self._onload)
+
 
 class BoardGui:
     '''Handle layout of cards on the board.'''
@@ -189,6 +197,9 @@ class BoardGui:
         self._board = board
         self._canv = canv
         self._card2ImgDict = card2ImgDict
+
+        # default, start with the 0th set of cards.
+        self._which_card_source = 0
 
     def clear(self):
         '''remove all cards from the canvas'''
@@ -243,8 +254,22 @@ class BoardGui:
         desty = CARD_PADDING + row * CARD_AREA_HEIGHT
         cardimg.drawOnCanvas(destx, desty)
 
+    def switchCardImages(self, *args):
+        # Go to the next card source
+        self._which_card_source = \
+            (self._which_card_source + 1) % len(CARD_SOURCES)
+
+        for ridx in range(4):
+            for cidx in range(13):
+                card = self._board.getCardAt(ridx, cidx)
+                if card is None:
+                    continue
+                cardimg = self._card2ImgDict[id(card)]
+                cardimg.switchCardImage(self._which_card_source)
+                self.drawCard(card, ridx, cidx)
 
 # ----------------------------- main -------------------------------
+
 
 class App:
     '''The main card game application.  This GUI creates a Deck and Board
@@ -371,6 +396,10 @@ class App:
             self._card2ImgDict[id(card)] = cardimg
 
         self._boardGui = BoardGui(self._board, self._canv, self._card2ImgDict)
+
+        self._switch_button = html.BUTTON('Switch Deck', Class='button')
+        self._switch_button.bind('click', self._boardGui.switchCardImages)
+        self._game_info2_elem <= self._switch_button
 
         self.loadHighScores()
 
@@ -719,7 +748,7 @@ class App:
     def displayMessageOverCanvas(self, msg, ms):
         '''Split msg on newlines and put each result into its own div,
         which is then centered in the containing div, and displayed
-        on over the canvas.  Undisplay it after *ms* milliseconds.
+        on over the canvas.  Undisplay it after * ms * milliseconds.
         '''
         self._messageDiv.style.display = "block"
         lines = msg.split('\n')
@@ -838,4 +867,4 @@ app = App(document, canvas)
 
 document <= html.H2(
     html.A("Instructions", href="instructions.html", Class="right-edge"))
-document <= html.H5('Version: 1.1.1', Class="right-edge")
+document <= html.H5('Version: 1.1.2', Class="right-edge")
