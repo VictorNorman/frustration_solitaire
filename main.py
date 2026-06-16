@@ -957,4 +957,4 @@ window.bind("resize", app.onWindowResize)
 document <= html.H2(
     html.A("Instructions", href="instructions.html", Class="right-edge")
 )
-document <= html.H5("Version: 1.1.2", Class="right-edge")
+document <= html.H5("Version: 1.2", Class="right-edge")
